@@ -7,7 +7,7 @@ on:
 
 jobs:
   check-next-version:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
@@ -49,7 +49,7 @@ jobs:
           echo "current_version=$(node ./node_modules/.bin/happy-current-version)" >> $GITHUB_OUTPUT
 
   publish: 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [check-next-version]
     if: ${{ needs.check-next-version.outputs.next_version != '' }}
 
@@ -118,7 +118,7 @@ jobs:
         run: npm publish --workspaces
 
   create-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [publish, check-next-version]
 
     strategy:
