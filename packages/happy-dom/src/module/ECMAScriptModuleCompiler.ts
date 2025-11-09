@@ -518,7 +518,12 @@ export default class ECMAScriptModuleCompiler {
 		newCode += '\n})';
 
 		try {
-			return { imports, execute: this.window.eval(newCode) };
+			return {
+				imports,
+				execute: this.window[PropertySymbol.evaluateScript](newCode, {
+					filename: moduleURL
+				})
+			};
 		} catch (e) {
 			const error = new this.window.SyntaxError(
 				`Failed to parse module '${moduleURL}': ${(<Error>e).message}`

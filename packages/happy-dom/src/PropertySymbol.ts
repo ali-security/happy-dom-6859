@@ -391,3 +391,4 @@ export const dispatchError = Symbol('dispatchError');
 export const supports = Symbol('supports');
 export const reason = Symbol('reason');
 export const propertyEventListeners = Symbol('propertyEventListeners');
+export const disableEvaluation = Symbol('disableEvaluation');

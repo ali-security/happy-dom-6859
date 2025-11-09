@@ -13,7 +13,9 @@ describe('HTMLLinkElement', () => {
 	let document: Document;
 
 	beforeEach(() => {
-		window = new Window();
+		window = new Window({
+			settings: { enableJavaScriptEvaluation: true, suppressCodeGenerationFromStringsWarning: true }
+		});
 		document = window.document;
 	});
 
@@ -33,21 +35,21 @@ describe('HTMLLinkElement', () => {
 			it('Returns the event listener.', () => {
 				const element = document.createElement('link');
 				element.setAttribute(`on${event}`, 'window.test = 1');
-				expect(element[`on${event}`]).toBeTypeOf('function');
-				element[`on${event}`](new Event(event));
-				expect(window['test']).toBe(1);
+				expect((<any>element)[`on${event}`]).toBeTypeOf('function');
+				(<any>element)[`on${event}`](new Event(event));
+				expect((<any>window)['test']).toBe(1);
 			});
 		});
 
 		describe(`set on${event}()`, () => {
 			it('Sets the event listener.', () => {
 				const element = document.createElement('link');
-				element[`on${event}`] = () => {
-					window['test'] = 1;
+				(<any>element)[`on${event}`] = () => {
+					(<any>window)['test'] = 1;
 				};
 				element.dispatchEvent(new Event(event));
 				expect(element.getAttribute(`on${event}`)).toBe(null);
-				expect(window['test']).toBe(1);
+				expect((<any>window)['test']).toBe(1);
 			});
 		});
 	}
@@ -66,14 +68,14 @@ describe('HTMLLinkElement', () => {
 			it(`Returns the "${property}" attribute.`, () => {
 				const element = document.createElement('link');
 				element.setAttribute(property, 'test');
-				expect(element[property]).toBe('test');
+				expect((<any>element)[property]).toBe('test');
 			});
 		});
 
 		describe(`set ${property}()`, () => {
 			it(`Sets the attribute "${property}".`, () => {
 				const element = document.createElement('link');
-				element[property] = 'test';
+				(<any>element)[property] = 'test';
 				expect(element.getAttribute(property)).toBe('test');
 			});
 		});
@@ -136,9 +138,10 @@ describe('HTMLLinkElement', () => {
 			let loadEventCurrentTarget: EventTarget | null = null;
 
 			vi.spyOn(ResourceFetch.prototype, 'fetch').mockImplementation(async function (
+				this: ResourceFetch,
 				url: string | URL
 			) {
-				loadedWindow = this.window;
+				loadedWindow = (<any>this).window;
 				loadedURL = <string>url;
 				return css;
 			});
@@ -158,8 +161,8 @@ describe('HTMLLinkElement', () => {
 
 			expect(loadedWindow).toBe(window);
 			expect(loadedURL).toBe('https://localhost:8080/test/path/file.css');
-			expect(element.sheet.cssRules.length).toBe(1);
-			expect(element.sheet.cssRules[0].cssText).toBe('div { background: red; }');
+			expect(element.sheet!.cssRules.length).toBe(1);
+			expect(element.sheet!.cssRules[0].cssText).toBe('div { background: red; }');
 			expect((<Event>(<unknown>loadEvent)).target).toBe(element);
 			expect(loadEventTarget).toBe(element);
 			expect(loadEventCurrentTarget).toBe(element);
@@ -170,7 +173,10 @@ describe('HTMLLinkElement', () => {
 			const thrownError = new Error('error');
 			let errorEvent: Event | null = null;
 
-			vi.spyOn(ResourceFetch.prototype, 'fetch').mockImplementation(async function () {
+			vi.spyOn(ResourceFetch.prototype, 'fetch').mockImplementation(async function (
+				this: ResourceFetch,
+				url: string | URL
+			) {
 				throw thrownError;
 			});
 
@@ -199,9 +205,10 @@ describe('HTMLLinkElement', () => {
 			let loadedURL: string | null = null;
 
 			vi.spyOn(ResourceFetch.prototype, 'fetch').mockImplementation(async function (
+				this: ResourceFetch,
 				url: string | URL
 			) {
-				loadedWindow = this.window;
+				loadedWindow = (<any>this).window;
 				loadedURL = <string>url;
 				return css;
 			});
@@ -225,9 +232,10 @@ describe('HTMLLinkElement', () => {
 			let loadedURL: string | null = null;
 
 			vi.spyOn(ResourceFetch.prototype, 'fetch').mockImplementation(async function (
+				this: ResourceFetch,
 				url: string | URL
 			) {
-				loadedWindow = this.window;
+				loadedWindow = (<any>this).window;
 				loadedURL = <string>url;
 				return css;
 			});
@@ -246,8 +254,8 @@ describe('HTMLLinkElement', () => {
 
 			expect(loadedWindow).toBe(window);
 			expect(loadedURL).toBe('https://localhost:8080/test/path/file.css');
-			expect(element.sheet.cssRules.length).toBe(1);
-			expect(element.sheet.cssRules[0].cssText).toBe('div { background: red; }');
+			expect(element.sheet!.cssRules.length).toBe(1);
+			expect(element.sheet!.cssRules[0].cssText).toBe('div { background: red; }');
 			expect((<Event>(<unknown>loadEvent)).target).toBe(element);
 			expect(loadEventTarget).toBe(element);
 			expect(loadEventCurrentTarget).toBe(element);
@@ -258,7 +266,10 @@ describe('HTMLLinkElement', () => {
 			const thrownError = new Error('error');
 			let errorEvent: Event | null = null;
 
-			vi.spyOn(ResourceFetch.prototype, 'fetch').mockImplementation(async function () {
+			vi.spyOn(ResourceFetch.prototype, 'fetch').mockImplementation(async function (
+				this: ResourceFetch,
+				url: string | URL
+			) {
 				throw thrownError;
 			});
 
@@ -286,9 +297,10 @@ describe('HTMLLinkElement', () => {
 			let loadedURL: string | null = null;
 
 			vi.spyOn(ResourceFetch.prototype, 'fetch').mockImplementation(async function (
+				this: ResourceFetch,
 				url: string | URL
 			) {
-				loadedWindow = this.window;
+				loadedWindow = (<any>this).window;
 				loadedURL = <string>url;
 				return css;
 			});
@@ -353,6 +365,8 @@ describe('HTMLLinkElement', () => {
 			const window = new Window({
 				url: 'https://localhost:8080/base/',
 				settings: {
+					enableJavaScriptEvaluation: true,
+					suppressCodeGenerationFromStringsWarning: true,
 					errorCapture: BrowserErrorCaptureEnum.disabled,
 					fetch: {
 						interceptor: {
@@ -403,7 +417,7 @@ describe('HTMLLinkElement', () => {
 				'https://localhost:8080/base/js/utilities/stringUtility.js'
 			]);
 
-			expect(window['moduleLoadOrder']).toEqual([
+			expect((<any>window)['moduleLoadOrder']).toEqual([
 				'apostrophWrapper.js',
 				'StringUtilityClass.js',
 				'stringUtility.js',
@@ -424,6 +438,8 @@ describe('HTMLLinkElement', () => {
 			const window = new Window({
 				url: 'https://localhost:8080/',
 				settings: {
+					enableJavaScriptEvaluation: true,
+					suppressCodeGenerationFromStringsWarning: true,
 					errorCapture: BrowserErrorCaptureEnum.disabled,
 					fetch: {
 						interceptor: {
@@ -503,6 +519,8 @@ describe('HTMLLinkElement', () => {
 			const window = new Window({
 				url: 'https://localhost:8080/',
 				settings: {
+					enableJavaScriptEvaluation: true,
+					suppressCodeGenerationFromStringsWarning: true,
 					errorCapture: BrowserErrorCaptureEnum.disabled,
 					fetch: {
 						interceptor: {
@@ -583,6 +601,8 @@ describe('HTMLLinkElement', () => {
 			const window = new Window({
 				url: 'https://localhost:8080/',
 				settings: {
+					enableJavaScriptEvaluation: true,
+					suppressCodeGenerationFromStringsWarning: true,
 					errorCapture: BrowserErrorCaptureEnum.disabled,
 					fetch: {
 						interceptor: {

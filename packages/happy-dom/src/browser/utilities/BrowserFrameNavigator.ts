@@ -60,12 +60,12 @@ export default class BrowserFrameNavigator {
 
 		// Javascript protocol
 		if (targetURL.protocol === 'javascript:') {
-			if (frame && !frame.page.context.browser.settings.disableJavaScriptEvaluation) {
+			if (frame && frame.page.context.browser.settings.enableJavaScriptEvaluation) {
 				const readyStateManager = frame.window[PropertySymbol.readyStateManager];
 
 				readyStateManager.startTask();
-				const code =
-					'//# sourceURL=' + frame.url + '\n' + targetURL.href.replace('javascript:', '');
+				
+				const code = targetURL.href.replace('javascript:', '');
 
 				// The browser will wait for the next tick before executing the script.
 				// Fixes issue where evaluating the response can throw an error.
@@ -74,7 +74,7 @@ export default class BrowserFrameNavigator {
 				await new Promise((resolve) => {
 					frame.window.requestAnimationFrame(() => {
 						frame.window.requestAnimationFrame(resolve);
-						frame.window.eval(code);
+						frame.window[PropertySymbol.evaluateScript](code, { filename: frame.url });
 					});
 				});
 

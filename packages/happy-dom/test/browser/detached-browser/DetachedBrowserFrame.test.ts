@@ -297,7 +297,12 @@ describe('DetachedBrowserFrame', () => {
 		});
 
 		it('Navigates to a URL with "javascript:" as protocol.', async () => {
-			const browser = new DetachedBrowser(BrowserWindow);
+			const browser = new DetachedBrowser(BrowserWindow, {
+				settings: {
+					enableJavaScriptEvaluation: true,
+					suppressCodeGenerationFromStringsWarning: true
+				}
+			});
 			browser.defaultContext.pages[0].mainFrame.window = new BrowserWindow(
 				browser.defaultContext.pages[0].mainFrame
 			);
@@ -950,6 +955,8 @@ describe('DetachedBrowserFrame', () => {
 		it('Navigates to a virtual server page.', async () => {
 			const browser = new DetachedBrowser(BrowserWindow, {
 				settings: {
+					enableJavaScriptEvaluation: true,
+					suppressCodeGenerationFromStringsWarning: true,
 					fetch: {
 						virtualServers: [
 							{
