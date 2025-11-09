@@ -2,7 +2,7 @@ name: Pull request
 
 on:
   push:
-	branches: [main]
+	branch: [main]
   pull_request
 
 jobs:
