@@ -1,10 +1,7 @@
 name: Pull request
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  pull_request
 
 jobs:
   build:
@@ -12,6 +9,7 @@ jobs:
     strategy:
       matrix:
         node-version: [20, 22, 24]
+      fail-fast: false
 
     steps:
       - uses: actions/checkout@v3
