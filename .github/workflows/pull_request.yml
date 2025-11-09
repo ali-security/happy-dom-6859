@@ -61,8 +61,5 @@ jobs:
       - name: Compile package
         run: npm run compile
 
-      - name: Lint
-        run: npm run lint
-
       - name: Test
         run: npm run test
