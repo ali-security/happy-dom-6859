@@ -1,14 +1,55 @@
 import { Window } from 'happy-dom';
-import Express from 'express';
+import http from 'node:http';
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
+
+// Express-like wrapper using http to avoid code generation issues
+function createExpress() {
+	const routes = { GET: {}, POST: {} };
+	const server = http.createServer((req, res) => {
+		const method = req.method;
+		const url = req.url;
+		const handler = routes[method]?.[url];
+		if (handler) {
+			req.get = (name) => req.headers[name.toLowerCase()];
+			const headers = {};
+			res.set = (key, value) => {
+				headers[key] = value;
+			};
+			res.send = (body) => {
+				res.writeHead(200, headers);
+				res.end(body);
+			};
+			handler(req, res);
+		} else {
+			res.writeHead(404);
+			res.end();
+		}
+	});
+	return {
+		get: (path, handler) => {
+			routes.GET[path] = handler;
+		},
+		post: (path, handler) => {
+			routes.POST[path] = handler;
+		},
+		listen: (port, callback) => {
+			if (callback) {
+				server.listen(port, callback);
+			} else {
+				server.listen(port);
+			}
+			return server;
+		}
+	};
+}
 
 describe('Fetch', () => {
 	it('Can perform a real fetch()', async () => {
 		const window = new Window({
 			url: 'http://localhost:3001'
 		});
-		const express = Express();
+		const express = createExpress();
 
 		express.get('/get/json', (_req, res) => {
 			res.set('Content-Type', 'application/json');
@@ -19,7 +60,7 @@ describe('Fetch', () => {
 
 		const response = await window.fetch('http://localhost:3001/get/json');
 
-		await server.close();
+		await new Promise((resolve) => server.close(resolve));
 
 		assert.strictEqual(response.headers.get('content-type'), 'application/json; charset=utf-8');
 		assert.strictEqual(response.ok, true);
@@ -37,7 +78,7 @@ describe('Fetch', () => {
 		const window = new Window({
 			url: 'http://localhost:3001'
 		});
-		const express = Express();
+		const express = createExpress();
 
 		express.post('/post/formdata', (req, res) => {
 			let body = '';
@@ -71,7 +112,7 @@ describe('Fetch', () => {
 
 		const text = await response.text();
 
-		await server.close();
+		await new Promise((resolve) => server.close(resolve));
 
 		assert.strictEqual(
 			text.replace(

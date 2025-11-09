@@ -1,7 +1,49 @@
 import { Window } from 'happy-dom';
-import Express from 'express';
+import http from 'node:http';
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
+
+// Express-like wrapper using http to avoid code generation issues
+function createExpress() {
+	const routes = { GET: {}, POST: {} };
+	const server = http.createServer((req, res) => {
+		const method = req.method;
+		const url = req.url;
+		const handler = routes[method]?.[url];
+		if (handler) {
+			req.get = (name) => req.headers[name.toLowerCase()];
+			const headers = {};
+			res.set = (key, value) => {
+				headers[key] = value;
+			};
+			res.send = (body) => {
+				res.writeHead(200, headers);
+				res.end(body);
+			};
+			res.sendStatus = (status) => {
+				res.writeHead(status);
+				res.end();
+			};
+			handler(req, res);
+		} else {
+			res.writeHead(404);
+			res.end();
+		}
+	});
+	return {
+		get: (path, handler) => {
+			routes.GET[path] = handler;
+		},
+		listen: (port, callback) => {
+			if (callback) {
+				server.listen(port, callback);
+			} else {
+				server.listen(port);
+			}
+			return server;
+		}
+	};
+}
 
 describe('XMLHttpRequest', () => {
 	it('Can perform a real asynchronous XMLHttpRequest request', async () => {
@@ -9,34 +51,35 @@ describe('XMLHttpRequest', () => {
 			const window = new Window({
 				url: 'http://localhost:3000/'
 			});
-			const express = Express();
+			const express = createExpress();
 
 			express.get('/get/json', (_req, res) => {
 				res.set('Content-Type', 'application/json');
 				res.send('{ "key1": "value1" }');
 			});
 
-			const server = express.listen(3000);
-			const request = new window.XMLHttpRequest();
+			const server = express.listen(3000, () => {
+				const request = new window.XMLHttpRequest();
 
-			request.open('GET', 'http://localhost:3000/get/json', true);
+				request.open('GET', 'http://localhost:3000/get/json', true);
 
-			request.addEventListener('load', () => {
-				assert.strictEqual(
-					request.getResponseHeader('content-type'),
-					'application/json; charset=utf-8'
-				);
-				assert.strictEqual(request.responseText, '{ "key1": "value1" }');
-				assert.strictEqual(request.status, 200);
-				assert.strictEqual(request.statusText, 'OK');
-				assert.strictEqual(request.responseURL, 'http://localhost:3000/get/json');
+				request.addEventListener('load', () => {
+					assert.strictEqual(
+						request.getResponseHeader('content-type'),
+						'application/json; charset=utf-8'
+					);
+					assert.strictEqual(request.responseText, '{ "key1": "value1" }');
+					assert.strictEqual(request.status, 200);
+					assert.strictEqual(request.statusText, 'OK');
+					assert.strictEqual(request.responseURL, 'http://localhost:3000/get/json');
 
-				server.close();
+					server.close();
 
-				resolve(null);
+					resolve(null);
+				});
+
+				request.send();
 			});
-
-			request.send();
 		});
 	});
 
@@ -45,7 +88,7 @@ describe('XMLHttpRequest', () => {
 			const window = new Window({
 				url: 'http://localhost:3000/'
 			});
-			const express = Express();
+			const express = createExpress();
 
 			express.get('/get/json', (req, res) => {
 				if (req.get('Authorization') === 'Basic test') {
@@ -55,24 +98,25 @@ describe('XMLHttpRequest', () => {
 				}
 			});
 
-			const server = express.listen(3000);
-			const request = new window.XMLHttpRequest();
+			const server = express.listen(3000, () => {
+				const request = new window.XMLHttpRequest();
 
-			request.open('GET', 'http://localhost:3000/get/json', true);
+				request.open('GET', 'http://localhost:3000/get/json', true);
 
-			request.setRequestHeader('Authorization', 'Basic test');
+				request.setRequestHeader('Authorization', 'Basic test');
 
-			request.addEventListener('load', () => {
-				assert.strictEqual(request.status, 200);
-				assert.strictEqual(request.statusText, 'OK');
-				assert.strictEqual(request.responseURL, 'http://localhost:3000/get/json');
+				request.addEventListener('load', () => {
+					assert.strictEqual(request.status, 200);
+					assert.strictEqual(request.statusText, 'OK');
+					assert.strictEqual(request.responseURL, 'http://localhost:3000/get/json');
 
-				server.close();
+					server.close();
 
-				resolve(null);
+					resolve(null);
+				});
+
+				request.send();
 			});
-
-			request.send();
 		});
 	});
 
